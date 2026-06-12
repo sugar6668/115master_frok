@@ -127,7 +127,7 @@ import TimeDisplay from './TimeDisplay.vue'
 import TransformButton from './TransformButton.vue'
 import VideoEnhanceSettings from './VideoEnhanceSettings.vue'
 import VolumeControl from './VolumeControl.vue'
-import { handleLoadPbf, isPbfLoading, isPbfLoaded } from '../../../../utils/pbfStore'
+import { handleLoadPbf, isPbfLoading, isPbfLoaded } from '../../../../utils/pbfStore.ts'
 
 /** 样式抽象 */
 const styles = clsx({
