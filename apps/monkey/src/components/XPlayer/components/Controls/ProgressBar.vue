@@ -38,6 +38,16 @@
           :class="styles.thumb.hover"
           :style="{ transform: `scaleX(${previewProgress / 100})` }"
         />
+        <div v-if="pbfBookmarks.length > 0" class="absolute top-0 left-0 w-full h-full pointer-events-none z-[6]">
+          <div
+            v-for="(bm, idx) in pbfBookmarks"
+            :key="idx"
+            class="absolute top-1/2 w-[10px] h-[10px] bg-white/95 rounded-full transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer shadow-[0_0_0_2px_rgba(255,210,50,0.3)] transition-all duration-150 hover:scale-[1.3] hover:bg-[#ffd232] hover:shadow-[0_0_0_3px_rgba(255,210,50,0.4),_0_3px_10px_rgba(0,0,0,0.3)]"
+            :style="{ left: `${(bm.time / (playerCore?.duration || 1)) * 100}%` }"
+            :title="bm.title"
+            @click.stop="playerCore && (playerCore.currentTime = bm.time)"
+          ></div>
+        </div>
       </div>
     </div>
     <!-- 缩略图预览 -->
@@ -56,6 +66,7 @@ import { computed, ref, watch } from 'vue'
 import Thumbnail from '@/components/XPlayer/components/Thumbnail/index.vue'
 import { usePlayerContext } from '@/components/XPlayer/hooks/usePlayerProvide'
 import { clsx } from '@/utils/clsx'
+import { pbfBookmarks } from '../utils/pbfStore'
 
 /** 样式抽象 */
 const styles = clsx({

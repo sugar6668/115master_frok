@@ -39,6 +39,22 @@
                 :disabled="!rootProps.hasNext"
                 :on-click="handlePlayNext"
               />
+              <button 
+                class="btn btn-ghost btn-sm ml-1 p-1 h-9 w-9 min-h-0 rounded-full inline-flex items-center justify-center transition-colors"
+                :class="isPbfLoaded ? 'text-[#ffd232] hover:text-[#ffc107]' : 'text-base-content/80 hover:text-base-content'"
+                :title="isPbfLoaded ? '已挂载目录书签，点击清空' : '一键挂载同目录 PBF 书签'"
+                @click="handleLoadPbf"
+              >
+                <svg v-if="isPbfLoading" class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" :style="isPbfLoaded ? 'filter: drop-shadow(0 0 4px rgba(255, 210, 50, .3));' : ''">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                  <line x1="12" y1="8" x2="12" y2="14"></line>
+                  <line x1="9" y1="11" x2="15" y2="11"></line>
+                </svg>
+              </button>
             </ControlBox>
             <ControlBox>
               <!-- 音量控制 -->
@@ -111,6 +127,7 @@ import TimeDisplay from './TimeDisplay.vue'
 import TransformButton from './TransformButton.vue'
 import VideoEnhanceSettings from './VideoEnhanceSettings.vue'
 import VolumeControl from './VolumeControl.vue'
+import { handleLoadPbf, isPbfLoading, isPbfLoaded } from '../utils/pbfStore'
 
 /** 样式抽象 */
 const styles = clsx({
