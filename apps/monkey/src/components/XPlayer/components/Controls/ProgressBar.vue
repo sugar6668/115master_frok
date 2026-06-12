@@ -66,7 +66,7 @@ import { computed, ref, watch } from 'vue'
 import Thumbnail from '@/components/XPlayer/components/Thumbnail/index.vue'
 import { usePlayerContext } from '@/components/XPlayer/hooks/usePlayerProvide'
 import { clsx } from '@/utils/clsx'
-import { pbfBookmarks } from '../../../../utils/pbfStore'
+import { pbfBookmarks } from '../../../../utils/pbfStore.ts'
 
 /** 样式抽象 */
 const styles = clsx({
@@ -76,7 +76,7 @@ const styles = clsx({
       'group',
       'hidden',
       'data-[canplay=true]:block',
-    ],
+    ]，
     wrapper: 'relative cursor-pointer py-4',
     track:
       [
