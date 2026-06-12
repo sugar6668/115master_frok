@@ -62,12 +62,30 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import Thumbnail from '@/components/XPlayer/components/Thumbnail/index.vue'
 import { usePlayerContext } from '@/components/XPlayer/hooks/usePlayerProvide'
 import { clsx } from '@/utils/clsx'
 import { pbfBookmarks } from './pbfStore'
+// ================= PBF 热点接收渲染逻辑开始 =================
+const pbfBookmarks = ref<any[]>([])
 
+// 监听 ControlBar 传来的全局事件
+onMounted(() => {
+  window.addEventListener('pbf-loaded', ((e: CustomEvent) => {
+    pbfBookmarks.value = e.detail
+  }) as EventListener)
+
+  window.addEventListener('pbf-cleared', () => {
+    pbfBookmarks.value = []
+  })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('pbf-loaded', () => {})
+  window.removeEventListener('pbf-cleared', () => {})
+})
+// ================= PBF 热点接收渲染逻辑结束 =================
 /** 样式抽象 */
 const styles = clsx({
   progressBar: {

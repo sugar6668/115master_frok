@@ -108,7 +108,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, shallowRef } from 'vue'
+import { computed, shallowRef, ref } from 'vue'
 import { useControlsMouseDetection } from '@/components/XPlayer/hooks/useControlsMouseDetection'
 import { usePlayerContext } from '@/components/XPlayer/hooks/usePlayerProvide'
 import { clsx } from '@/utils/clsx'
@@ -127,8 +127,106 @@ import TimeDisplay from './TimeDisplay.vue'
 import TransformButton from './TransformButton.vue'
 import VideoEnhanceSettings from './VideoEnhanceSettings.vue'
 import VolumeControl from './VolumeControl.vue'
-import { handleLoadPbf, isPbfLoading, isPbfLoaded } from './pbfStore'
+// ================= PBF 章节热点核心逻辑开始 =================
+const isPbfLoading = ref(false)
+const isPbfLoaded = ref(false)
 
+function getGmXhr() {
+  if (typeof window !== 'undefined' && typeof window['GM_xmlhttpRequest'] !== 'undefined') {
+    return window['GM_xmlhttpRequest'];
+  }
+  // @ts-ignore
+  if (typeof GM_xmlhttpRequest !== 'undefined') return GM_xmlhttpRequest;
+  return null;
+}
+
+function requestJson(url: string): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const xhr = getGmXhr();
+    if (!xhr) return reject(new Error('未找到 GM_xmlhttpRequest'));
+    xhr({
+      method: 'GET', url, responseType: 'json',
+      onload: (res: any) => {
+        let data = res.response;
+        if (!data && res.responseText) { try { data = JSON.parse(res.responseText) } catch(e){} }
+        resolve(data);
+      },
+      onerror: () => reject(new Error('网络请求失败'))
+    });
+  });
+}
+
+function fetchText(url: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const xhr = getGmXhr();
+    if (!xhr) return reject(new Error('未找到 GM_xmlhttpRequest'));
+    xhr({
+      method: 'GET', url, responseType: 'blob',
+      onload: (res: any) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target?.result as string);
+        reader.readAsText(res.response);
+      },
+      onerror: () => reject(new Error('下载书签文件失败'))
+    });
+  });
+}
+
+async function handleLoadPbf() {
+  if (isPbfLoading.value) return;
+  if (isPbfLoaded.value) {
+    // 触发全局事件：清除热点
+    window.dispatchEvent(new CustomEvent('pbf-cleared'));
+    isPbfLoaded.value = false;
+    return;
+  }
+
+  isPbfLoading.value = true;
+  try {
+    const m1 = location.href.match(/[?&]pick_code=([^&]+)/i);
+    const m2 = location.href.match(/[?&]pickcode=([^&]+)/i);
+    const pickCode = m1 ? m1[1] : (m2 ? m2[1] : null);
+    if (!pickCode) throw new Error('未获取到当前视频的 pick_code');
+
+    const videoInfo = await requestJson(`https://webapi.115.com/files/video?pick_code=${pickCode}`);
+    const infoData = videoInfo?.data || videoInfo;
+    const cid = infoData?.parent_id || infoData?.cid;
+    const videoName = infoData?.file_name || '';
+    if (!cid) throw new Error('视频信息里缺失目录 cid');
+
+    const baseName = videoName.replace(/\.[^.]+$/, '');
+    const dirInfo = await requestJson(`https://webapi.115.com/files?aid=1&cid=${cid}&o=file_name&asc=1&offset=0&limit=1000`);
+    const files = dirInfo?.data || [];
+    const pbfFiles = files.filter((f: any) => f.n && f.n.toLowerCase().endsWith('.pbf'));
+    if (pbfFiles.length === 0) throw new Error('当前目录下未找到任何 .pbf 文件');
+
+    let targetPbf = pbfFiles.find((f: any) => f.n.includes(baseName)) || pbfFiles[0];
+
+    const downInfo = await requestJson(`https://webapi.115.com/files/download?pickcode=${targetPbf.pc}`);
+    const fileUrl = downInfo?.data?.file_url || downInfo?.file_url;
+    if (!fileUrl) throw new Error('书签直链获取为空');
+
+    const text = await fetchText(fileUrl);
+    const marks: any[] = [];
+    for (let line of text.split(/\r?\n/)) {
+      line = line.trim();
+      let match = line.match(/^\d+=(\d+)\*(.*?)\*/) || line.match(/^(\d+)[\=\*](.*)/);
+      if (match) {
+        marks.push({ time: parseInt(match[1], 10) / 1000, title: match[2].trim() || '书签' });
+      }
+    }
+    if (marks.length === 0) throw new Error('解析结果为空');
+
+    // 触发全局事件：发送解析好的热点数据给进度条
+    window.dispatchEvent(new CustomEvent('pbf-loaded', { detail: marks.sort((a, b) => a.time - b.time) }));
+    isPbfLoaded.value = true;
+  } catch (err: any) {
+    alert('【PBF 热点解析失败】\n' + err.message);
+  } finally {
+    isPbfLoading.value = false;
+  }
+}
+// ================= PBF 章节热点核心逻辑结束 =================
 /** 样式抽象 */
 const styles = clsx({
   controlBar: {
